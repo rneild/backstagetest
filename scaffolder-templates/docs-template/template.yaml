@@ -1,8 +1,8 @@
 apiVersion: backstage.io/v1beta2
 kind: Template
 metadata:
-  name: docs-template
-  title: Documentation Template
+  name: docs-template-3
+  title: Documentation Template 333
   description: Create a new standalone documentation project
   tags:
     - recommended
