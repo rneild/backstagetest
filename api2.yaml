@@ -1,8 +1,8 @@
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: spotify
-  description: The Spotify web API
+  name: profileservice
+  description: CS Profile Service
   tags:
     - spotify
     - rest
