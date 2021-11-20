@@ -6,9 +6,6 @@ metadata:
   tags:
     - spotify
     - rest
-  annotations:
-    # The annotation is deprecated, we use placeholders (see below) instead, remove it later.
-    backstage.io/definition-at-location: 'url:https://dev.azure.com/hurontfs/hrs/_git/CS_ProfileService?path=/api/profileservice.yml'
 spec:
   type: openapi
   lifecycle: production
