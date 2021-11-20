@@ -1,0 +1,1537 @@
+openapi: '3.0.2'
+info:
+  title: Profile
+  version: '1.0.0'
+  description: |
+        Profile service - Manage organizations, persons and other related data
+        # Introduction
+        The ProfileService API offers the necessary tools to access and manipulate data related to Organizations and Persons in the Huron Research Suite.  
+
+        # OpenAPI Specification
+        This API is documented in **OpenAPI format** and provided by [swagger.io](http://swagger.io) team.
+        It was **extended** to illustrate features of [code-samples](https://github.com/ErikWittern/openapi-snippet)
+        tool and [ReDoc](https://github.com/Redocly/redoc) documentation. 
+
+        # Cross-Origin Resource Sharing
+        This API features Cross-Origin Resource Sharing (CORS) implemented in compliance with  [W3C spec](https://www.w3.org/TR/cors/).
+        Implementation of this standard in the ProfileService API allows cross-domain communication from the browser.
+        All responses have a wildcard same-origin which makes them completely public and accessible to everyone, including any code on any site.
+
+        # Authentication
+        ProfileService offers two forms of authentication:
+          - API Key
+          - bearerJwtAuth  
+        
+        
+        <SecurityDefinitions /> 
+servers:
+  - url: https://{server}
+    variables:
+      server: 
+        default: "hrs.com"
+paths:
+  /api/extensions:
+    options:
+      summary: CORS (Cross-Origin Resource Sharing) support
+      description: Enable [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) to support data transfers between browsers and servers, 
+        even if requests originate from different domains.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema: 
+                type: object
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: URI that may access the resource
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Method or methods allowed when accessing the resource
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                default: "*"
+              description: Used in response to a preflight request to indicate which HTTP headers can be used when making the request.
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-hrs-clear-tenant-id'''
+              method.response.header.Access-Control-Allow-Methods: '''*'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      summary: Return user defined extensions to the data model
+      description: "Returns JSON representation of all custom properties defined for the current tenant to the ProfileService data model.  The JSON representation identifies the core object extended, followed by the user-defined schema extensions."
+      operationId: getExtensions
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array 
+                    items: 
+                      $ref:  "#/components/schemas/SchemaExtension"
+        '400': 
+          description: Bad Request # For any problems with parameters and their values
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '401': # Missing creds and authentication should be the system provided mechanisams. 
+          description: Unauthorized # 
+        '403': # refuse to authorize using provided creds
+          description: Forbidden 
+        '500':
+          description: Internal Server Error
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ExtensionsGetHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"        
+      tags: 
+        - Schema extension
+  /api/extensions/{name}:
+    options:
+      summary: CORS (Cross-Origin Resource Sharing) support
+      description: Enable [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) to support data transfers between browsers and servers, 
+        even if requests originate from different domains.
+      parameters:
+        - in: path
+          name: name
+          required: true
+          description: Name of the core resource managed by the service
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema: 
+                type: object
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: URI that may access the resource
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Method or methods allowed when accessing the resource
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                default: "*"
+              description: Used in response to a preflight request to indicate which HTTP headers can be used when making the request.
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-hrs-clear-tenant-id'''
+              method.response.header.Access-Control-Allow-Methods: '''*'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            responseTemplates:
+              application/json: |
+                {}
+    put:
+      summary: Replace existing custom properties collection definition
+      description: "All custom properties defined for the ProfileService data model are replaced, as defined by the JSON representation included in the request body.  <br><br>**CAUTION!** A replacement custom property definition that does not include currently-defined custom properties will result in the loss of any data stored in a pre-existing custom property that is excluded from the request body.  The best-practice recommendation is to perform a GET operation to retrieve the current state of schema extensions, and use the returned object as the basis for the updated request body, to avoid inadvertent removal of a pre-existing custom property schema."
+      operationId: replaceExtension
+      parameters:
+        - in: path
+          name: name
+          required: true
+          description: Name of the core resource managed by the service
+          schema:
+            type: string
+      requestBody: 
+        required: true
+        description: A JSON object including all fields 
+        content:
+          application/json:
+           schema:
+              $ref: "#/components/schemas/SchemaExtension"
+      responses:
+        '201':
+          description: Custom properties collection is replaced
+          content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    hrn:
+                      type: string
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ExtensionsPutHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "201"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"          
+      tags: 
+        - Schema extension        
+  /api/organizations:
+    options:
+      summary: CORS (Cross-Origin Resource Sharing) support
+      description: Enable [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) to support data transfers between browsers and servers, 
+        even if requests originate from different domains.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema: 
+                type: object
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: URI that may access the resource
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Method or methods allowed when accessing the resource
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                default: "*"
+              description: Used in response to a preflight request to indicate which HTTP headers can be used when making the request.
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-hrs-clear-tenant-id'''
+              method.response.header.Access-Control-Allow-Methods: '''*'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      summary: Returns a list of organizations
+      operationId: getOrganizations
+      parameters:
+        - $ref: "#/components/parameters/Pagination"
+        - $ref: "#/components/parameters/Filter"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/IncludeFields" # One or more properties. 
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganiztionsListResponse"
+        '400': 
+          description: Bad Request # For any problems with parameters and their values
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '401': 
+          description: "Unauthorized: This error indicates missing credentials or other issues with the system provided authentication mechanisams." 
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '403': 
+          description: "Forbidden: The system will return this error if the provided credentials do not have access to the requested data."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '500':
+          description: "Internal Server Error: There is an internal problem with the service that prevents the requested data from being returned."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OrganizationsGetHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"        
+      tags: 
+        - Organization
+      x-codeSamples:
+      - lang: Node + Request
+        source: |
+          const request = require('request');
+
+          const options = {
+            method: 'GET',
+            url: 'https:///%7Bserver%7D/organizations',
+            qs: {
+              pagination: 'SOME_OBJECT_VALUE',
+              filter: 'SOME_ARRAY_VALUE',
+              sort: 'SOME_STRING_VALUE',
+              include: 'SOME_STRING_VALUE'
+            },
+            headers: {tenant_id: 'SOME_STRING_VALUE', 'x-api-key': 'SOME_STRING_VALUE'}
+          };
+
+          request(options, function (error, response, body) {
+            if (error) throw new Error(error);
+
+            console.log(body);
+          });
+      - lang: Shell + Curl
+        source: |-
+          curl --request GET \
+            --url 'https:///%7Bserver%7D/organizations?pagination=SOME_OBJECT_VALUE&filter=SOME_ARRAY_VALUE&sort=SOME_STRING_VALUE&include=SOME_STRING_VALUE' \
+            --header 'tenant_id: SOME_STRING_VALUE' \
+            --header 'x-api-key: SOME_STRING_VALUE'
+      - lang: Shell + Httpie
+        source: |-
+          http GET 'https:///%7Bserver%7D/organizations?pagination=SOME_OBJECT_VALUE&filter=SOME_ARRAY_VALUE&sort=SOME_STRING_VALUE&include=SOME_STRING_VALUE' \
+            tenant_id:SOME_STRING_VALUE \
+            x-api-key:SOME_STRING_VALUE
+      - lang: Python + Python3
+        source: |-
+          import http.client
+
+          conn = http.client.HTTPSConnection("")
+
+          headers = {
+              'tenant_id': "SOME_STRING_VALUE",
+              'x-api-key': "SOME_STRING_VALUE"
+              }
+
+          conn.request("GET", "%7Bserver%7D/organizations?pagination=SOME_OBJECT_VALUE&filter=SOME_ARRAY_VALUE&sort=SOME_STRING_VALUE&include=SOME_STRING_VALUE", headers=headers)
+
+          res = conn.getresponse()
+          data = res.read()
+
+          print(data.decode("utf-8"))
+      - lang: Php + Curl
+        source: |-
+          <?php
+
+          $curl = curl_init();
+
+          curl_setopt_array($curl, [
+            CURLOPT_URL => "https:///%7Bserver%7D/organizations?pagination=SOME_OBJECT_VALUE&filter=SOME_ARRAY_VALUE&sort=SOME_STRING_VALUE&include=SOME_STRING_VALUE",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+            CURLOPT_HTTPHEADER => [
+              "tenant_id: SOME_STRING_VALUE",
+              "x-api-key: SOME_STRING_VALUE"
+            ],
+          ]);
+
+          $response = curl_exec($curl);
+          $err = curl_error($curl);
+
+          curl_close($curl);
+
+          if ($err) {
+            echo "cURL Error #:" . $err;
+          } else {
+            echo $response;
+          }
+      - lang: Php + Http1
+        source: |-
+          <?php
+
+          $request = new HttpRequest();
+          $request->setUrl('https:///%7Bserver%7D/organizations');
+          $request->setMethod(HTTP_METH_GET);
+
+          $request->setQueryData([
+            'pagination' => 'SOME_OBJECT_VALUE',
+            'filter' => 'SOME_ARRAY_VALUE',
+            'sort' => 'SOME_STRING_VALUE',
+            'include' => 'SOME_STRING_VALUE'
+          ]);
+
+          $request->setHeaders([
+            'tenant_id' => 'SOME_STRING_VALUE',
+            'x-api-key' => 'SOME_STRING_VALUE'
+          ]);
+
+          try {
+            $response = $request->send();
+
+            echo $response->getBody();
+          } catch (HttpException $ex) {
+            echo $ex;
+          }
+      - lang: Php + Http2
+        source: |-
+          <?php
+
+          $client = new http\Client;
+          $request = new http\Client\Request;
+
+          $request->setRequestUrl('https:///%7Bserver%7D/organizations');
+          $request->setRequestMethod('GET');
+          $request->setQuery(new http\QueryString([
+            'pagination' => 'SOME_OBJECT_VALUE',
+            'filter' => 'SOME_ARRAY_VALUE',
+            'sort' => 'SOME_STRING_VALUE',
+            'include' => 'SOME_STRING_VALUE'
+          ]));
+
+          $request->setHeaders([
+            'tenant_id' => 'SOME_STRING_VALUE',
+            'x-api-key' => 'SOME_STRING_VALUE'
+          ]);
+
+          $client->enqueue($request)->send();
+          $response = $client->getResponse();
+
+          echo $response->getBody();
+    post:
+      summary: Creates an organization and returns system generated indentifier HRN; Not Idempotent
+      description: "Creates the organization record as specified in the request body, and returns the HRN (Huron Resource Number).  \n\nThis operation is not idempotent (i.e., if it is executed multiple times, it will create multiple records, and return a different HRN for each one)."
+      operationId: createOrganization
+      requestBody:
+        required: true
+        description: A JSON object that contains values for all required fields and any desired optional fields
+        content:
+          application/json:
+           schema:
+              $ref: "#/components/schemas/Organization"            
+      responses:
+        '201':
+          description: Organization created
+          content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    hrn:
+                      type: string
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OrganizationsPostHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "201"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"           
+      tags: 
+        - Organization
+      x-codeSamples:
+      - lang: Node + Request
+        source: |
+          const request = require('request');
+
+          const options = {
+            method: 'POST',
+            url: 'https:///%7Bserver%7D/organizations',
+            headers: {'content-type': 'application/json'},
+            body: {
+              name: 'string',
+              id: 'string',
+              sourceIdentifier: 'string',
+              active: true,
+              dateCreated: '2019-08-24T14:15:22Z',
+              dateModified: '2019-08-24T14:15:22Z',
+              category: {name: 'string'},
+              alias: ['string'],
+              functions: [{name: 'string'}],
+              notes: 'string',
+              contactInformation: {
+                addressLine1: 'string',
+                addressLine2: 'string',
+                city: 'string',
+                stateProvince: 'string',
+                postalCode: 0,
+                country: 'string',
+                phone: 'string',
+                email: 'string',
+                website: 'string'
+              },
+              employees: [
+                {
+                  honrific: 'string',
+                  id: 'string',
+                  active: true,
+                  firstName: 'string',
+                  lastName: 'string',
+                  middleName: 'string',
+                  title: 'string',
+                  userId: 'string',
+                  ORCID: 'string',
+                  sourceIdentifier: 'string',
+                  contactInformation: {
+                    addressLine1: 'string',
+                    addressLine2: 'string',
+                    city: 'string',
+                    stateProvince: 'string',
+                    postalCode: 0,
+                    country: 'string',
+                    phone: 'string',
+                    email: 'string',
+                    website: 'string'
+                  },
+                  earnedDegrees: 'string',
+                  employeeId: 'string',
+                  dateCreated: '2019-08-24T14:15:22Z',
+                  dateModified: '2019-08-24T14:15:22Z'
+                }
+              ]
+            },
+            json: true
+          };
+
+          request(options, function (error, response, body) {
+            if (error) throw new Error(error);
+
+            console.log(body);
+          });
+      - lang: Shell + Curl
+        source: |-
+          curl --request POST \
+            --url https:///%7Bserver%7D/organizations \
+            --header 'content-type: application/json' \
+            --data '{"name":"string","id":"string","sourceIdentifier":"string","active":true,"dateCreated":"2019-08-24T14:15:22Z","dateModified":"2019-08-24T14:15:22Z","category":{"name":"string"},"alias":["string"],"functions":[{"name":"string"}],"notes":"string","contactInformation":{"addressLine1":"string","addressLine2":"string","city":"string","stateProvince":"string","postalCode":0,"country":"string","phone":"string","email":"string","website":"string"},"employees":[{"honrific":"string","id":"string","active":true,"firstName":"string","lastName":"string","middleName":"string","title":"string","userId":"string","ORCID":"string","sourceIdentifier":"string","contactInformation":{"addressLine1":"string","addressLine2":"string","city":"string","stateProvince":"string","postalCode":0,"country":"string","phone":"string","email":"string","website":"string"},"earnedDegrees":"string","employeeId":"string","dateCreated":"2019-08-24T14:15:22Z","dateModified":"2019-08-24T14:15:22Z"}]}'
+      - lang: Shell + Httpie
+        source: |-
+          echo '{"name":"string","id":"string","sourceIdentifier":"string","active":true,"dateCreated":"2019-08-24T14:15:22Z","dateModified":"2019-08-24T14:15:22Z","category":{"name":"string"},"alias":["string"],"functions":[{"name":"string"}],"notes":"string","contactInformation":{"addressLine1":"string","addressLine2":"string","city":"string","stateProvince":"string","postalCode":0,"country":"string","phone":"string","email":"string","website":"string"},"employees":[{"honrific":"string","id":"string","active":true,"firstName":"string","lastName":"string","middleName":"string","title":"string","userId":"string","ORCID":"string","sourceIdentifier":"string","contactInformation":{"addressLine1":"string","addressLine2":"string","city":"string","stateProvince":"string","postalCode":0,"country":"string","phone":"string","email":"string","website":"string"},"earnedDegrees":"string","employeeId":"string","dateCreated":"2019-08-24T14:15:22Z","dateModified":"2019-08-24T14:15:22Z"}]}' |  \
+            http POST https:///%7Bserver%7D/organizations \
+            content-type:application/json
+      - lang: Python + Python3
+        source: |-
+          import http.client
+
+          conn = http.client.HTTPSConnection("")
+
+          payload = "{\"name\":\"string\",\"id\":\"string\",\"sourceIdentifier\":\"string\",\"active\":true,\"dateCreated\":\"2019-08-24T14:15:22Z\",\"dateModified\":\"2019-08-24T14:15:22Z\",\"category\":{\"name\":\"string\"},\"alias\":[\"string\"],\"functions\":[{\"name\":\"string\"}],\"notes\":\"string\",\"contactInformation\":{\"addressLine1\":\"string\",\"addressLine2\":\"string\",\"city\":\"string\",\"stateProvince\":\"string\",\"postalCode\":0,\"country\":\"string\",\"phone\":\"string\",\"email\":\"string\",\"website\":\"string\"},\"employees\":[{\"honrific\":\"string\",\"id\":\"string\",\"active\":true,\"firstName\":\"string\",\"lastName\":\"string\",\"middleName\":\"string\",\"title\":\"string\",\"userId\":\"string\",\"ORCID\":\"string\",\"sourceIdentifier\":\"string\",\"contactInformation\":{\"addressLine1\":\"string\",\"addressLine2\":\"string\",\"city\":\"string\",\"stateProvince\":\"string\",\"postalCode\":0,\"country\":\"string\",\"phone\":\"string\",\"email\":\"string\",\"website\":\"string\"},\"earnedDegrees\":\"string\",\"employeeId\":\"string\",\"dateCreated\":\"2019-08-24T14:15:22Z\",\"dateModified\":\"2019-08-24T14:15:22Z\"}]}"
+
+          headers = { 'content-type': "application/json" }
+
+          conn.request("POST", "%7Bserver%7D/organizations", payload, headers)
+
+          res = conn.getresponse()
+          data = res.read()
+
+          print(data.decode("utf-8"))
+      - lang: Php + Curl
+        source: |-
+          <?php
+
+          $curl = curl_init();
+
+          curl_setopt_array($curl, [
+            CURLOPT_URL => "https:///%7Bserver%7D/organizations",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => "{\"name\":\"string\",\"id\":\"string\",\"sourceIdentifier\":\"string\",\"active\":true,\"dateCreated\":\"2019-08-24T14:15:22Z\",\"dateModified\":\"2019-08-24T14:15:22Z\",\"category\":{\"name\":\"string\"},\"alias\":[\"string\"],\"functions\":[{\"name\":\"string\"}],\"notes\":\"string\",\"contactInformation\":{\"addressLine1\":\"string\",\"addressLine2\":\"string\",\"city\":\"string\",\"stateProvince\":\"string\",\"postalCode\":0,\"country\":\"string\",\"phone\":\"string\",\"email\":\"string\",\"website\":\"string\"},\"employees\":[{\"honrific\":\"string\",\"id\":\"string\",\"active\":true,\"firstName\":\"string\",\"lastName\":\"string\",\"middleName\":\"string\",\"title\":\"string\",\"userId\":\"string\",\"ORCID\":\"string\",\"sourceIdentifier\":\"string\",\"contactInformation\":{\"addressLine1\":\"string\",\"addressLine2\":\"string\",\"city\":\"string\",\"stateProvince\":\"string\",\"postalCode\":0,\"country\":\"string\",\"phone\":\"string\",\"email\":\"string\",\"website\":\"string\"},\"earnedDegrees\":\"string\",\"employeeId\":\"string\",\"dateCreated\":\"2019-08-24T14:15:22Z\",\"dateModified\":\"2019-08-24T14:15:22Z\"}]}",
+            CURLOPT_HTTPHEADER => [
+              "content-type: application/json"
+            ],
+          ]);
+
+          $response = curl_exec($curl);
+          $err = curl_error($curl);
+
+          curl_close($curl);
+
+          if ($err) {
+            echo "cURL Error #:" . $err;
+          } else {
+            echo $response;
+          }
+      - lang: Php + Http1
+        source: |-
+          <?php
+
+          $request = new HttpRequest();
+          $request->setUrl('https:///%7Bserver%7D/organizations');
+          $request->setMethod(HTTP_METH_POST);
+
+          $request->setHeaders([
+            'content-type' => 'application/json'
+          ]);
+
+          $request->setBody('{"name":"string","id":"string","sourceIdentifier":"string","active":true,"dateCreated":"2019-08-24T14:15:22Z","dateModified":"2019-08-24T14:15:22Z","category":{"name":"string"},"alias":["string"],"functions":[{"name":"string"}],"notes":"string","contactInformation":{"addressLine1":"string","addressLine2":"string","city":"string","stateProvince":"string","postalCode":0,"country":"string","phone":"string","email":"string","website":"string"},"employees":[{"honrific":"string","id":"string","active":true,"firstName":"string","lastName":"string","middleName":"string","title":"string","userId":"string","ORCID":"string","sourceIdentifier":"string","contactInformation":{"addressLine1":"string","addressLine2":"string","city":"string","stateProvince":"string","postalCode":0,"country":"string","phone":"string","email":"string","website":"string"},"earnedDegrees":"string","employeeId":"string","dateCreated":"2019-08-24T14:15:22Z","dateModified":"2019-08-24T14:15:22Z"}]}');
+
+          try {
+            $response = $request->send();
+
+            echo $response->getBody();
+          } catch (HttpException $ex) {
+            echo $ex;
+          }
+      - lang: Php + Http2
+        source: |-
+          <?php
+
+          $client = new http\Client;
+          $request = new http\Client\Request;
+
+          $body = new http\Message\Body;
+          $body->append('{"name":"string","id":"string","sourceIdentifier":"string","active":true,"dateCreated":"2019-08-24T14:15:22Z","dateModified":"2019-08-24T14:15:22Z","category":{"name":"string"},"alias":["string"],"functions":[{"name":"string"}],"notes":"string","contactInformation":{"addressLine1":"string","addressLine2":"string","city":"string","stateProvince":"string","postalCode":0,"country":"string","phone":"string","email":"string","website":"string"},"employees":[{"honrific":"string","id":"string","active":true,"firstName":"string","lastName":"string","middleName":"string","title":"string","userId":"string","ORCID":"string","sourceIdentifier":"string","contactInformation":{"addressLine1":"string","addressLine2":"string","city":"string","stateProvince":"string","postalCode":0,"country":"string","phone":"string","email":"string","website":"string"},"earnedDegrees":"string","employeeId":"string","dateCreated":"2019-08-24T14:15:22Z","dateModified":"2019-08-24T14:15:22Z"}]}');
+
+          $request->setRequestUrl('https:///%7Bserver%7D/organizations');
+          $request->setRequestMethod('POST');
+          $request->setBody($body);
+
+          $request->setHeaders([
+            'content-type' => 'application/json'
+          ]);
+
+          $client->enqueue($request)->send();
+          $response = $client->getResponse();
+
+          echo $response->getBody();
+  /api/organizations/{hrn}:
+    options:
+      summary: CORS support
+      description: Enable CORS by returnning correct headers
+      parameters:
+        - in: path
+          name: hrn
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema: 
+                type: object
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: URI that may access the resource
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Method or methods allowed when accessing the resource
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                default: "*"
+              description: Used in response to a preflight request to indicate which HTTP headers can be used when making the request.
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-hrs-clear-tenant-id'''
+              method.response.header.Access-Control-Allow-Methods: '''*'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      summary: Get an organization by its HRN  # Here HRN is system generated identifier for the organization and not user specified ID (may be unique)
+      description: "Returns a JSON object representing the organization record specified by its HRN.  \n\nHere, the HRN is the system generated identifier for the organization, and is not a user specified ID."
+      operationId: getOrganizationForHRN
+      parameters:
+        - in: path
+          name: hrn
+          required: true
+          schema:
+            type: string
+      responses: 
+        '200':
+          description: Get organization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationResponse"
+        '404':
+          description: "Organization Not Found: The system will throw this error if the HRN provided does not correspond with an Organization record in the data."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '400': 
+          description: "Bad Request: This error is returned for any problems with parameters and their values."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '401': 
+          description: "Unauthorized: This error indicates missing credentials or other issues with the system provided authentication mechanisams." 
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '403': 
+          description: "Forbidden: The system will return this error if the provided credentials do not have access to the requested data."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '500':
+          description: "Internal Server Error: There is an internal problem with the service that prevents the requested data from being returned."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OrganizationsGetByHrnHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"           
+      tags: 
+        - Organization
+    put:
+      summary: Replace entire state of the specified organization, all field are updated. Idempotent
+      description: "Updates the organization record specified by the HRN to reflect all values included in the request body, which must be a complete record in the appropriate JSON format, including all fields that are normally optional for the POST operation. \n\nThis operation is idempotent (i.e., if it is submitted multiple times, it will have the same effect as it did the first time)."
+      operationId: replaceOrganization
+      parameters:
+        - in: path
+          name: hrn
+          required: true
+          schema:
+            type: string
+      requestBody: 
+        required: true
+        description: A JSON object including all fields 
+        content:
+          application/json:
+           schema:
+              $ref: "#/components/schemas/Organization"
+      responses:
+        '201':
+          description: Organization replaced
+          content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    hrn:
+                      type: string
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OrganizationsPutHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "201"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"          
+      tags: 
+        - Organization
+    patch:
+      summary: Replace one more properties of specified organization. Idempotent.
+      description: "Updates the organization record specified by the HRN to reflect any values included in the request body.  The JSON request body must include required fields, but any optional fields not included will remain unchanged by this operation. \n\n**NOTE**: If the dateModified value in the request body is earlier than what is currently in the Organization record, the request will fail. \n\nThis operation is idempotent (i.e., if it is submitted multiple times, it will have the same effect as it did the first time)."
+      operationId: updateOrganization
+      parameters:
+        - in: path
+          name: hrn
+          required: true
+          schema:
+            type: string
+      requestBody: 
+        required: true
+        description: A JSON object that contains required fields like name, id - must be unqiue
+        content:
+          application/json:
+           schema:
+            $ref: "#/components/schemas/Organization"
+      responses:
+        '204':
+          description: Organization updated
+          content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    hrn:
+                      type: string
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OrganizationsPatchHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "204"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"          
+      tags: 
+        - Organization
+
+  /api/persons:
+    options:
+      summary: CORS support
+      description: Enable CORS by returnning correct headers
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema: 
+                type: object
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: URI that may access the resource
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Method or methods allowed when accessing the resource
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                default: "*"
+              description: Used in response to a preflight request to indicate which HTTP headers can be used when making the request.
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-hrs-clear-tenant-id'''
+              method.response.header.Access-Control-Allow-Methods: '''*'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      summary: Returns a list of persons
+      operationId: getPersons
+      description: This operation will return a list of persons with all available data for each.  This data can be filtered, sorted, and paginated as specified.
+      parameters:
+        - $ref: "#/components/parameters/Pagination"
+        - $ref: "#/components/parameters/Filter"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/IncludeFields" # One or more properties. 
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonsListResponse"
+        '400': 
+          description: Bad Request # For any problems with parameters and their values
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '401': 
+          description: "Unauthorized: This error indicates missing credentials or other issues with the system provided authentication mechanisams." 
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '403': 
+          description: "Forbidden: The system will return this error if the provided credentials do not have access to the requested data."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '500':
+          description: "Internal Server Error: There is an internal problem with the service that prevents the requested data from being returned."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"      
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PersonsGetHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"        
+      tags: 
+        - Person          
+    post:
+      summary: Creates an person and returns system generated indentifier HRN
+      description: "Creates the person record as specified in the request body, and returns the HRN (Huron Resource Number).  \n\nThis operation is not idempotent (i.e., if it is executed multiple times, it will create multiple records, and return a different HRN for each one)."
+      operationId: createPerson
+      requestBody:
+        required: true
+        description: A JSON object that contains values for required and optional fields
+        content:
+          application/json:
+           schema:
+             $ref: "#/components/schemas/Person"
+      responses:
+        '201':
+          description: Person created
+          content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    hrn:
+                      type: string
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PersonsPostHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "201"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"           
+      tags: 
+        - Person
+  /api/persons/{hrn}:
+    options:
+      summary: CORS support
+      description: Enable CORS by returnning correct headers
+      parameters:
+        - in: path
+          name: hrn
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema: 
+                type: object
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: URI that may access the resource
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Method or methods allowed when accessing the resource
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                default: "*"
+              description: Used in response to a preflight request to indicate which HTTP headers can be used when making the request.
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-hrs-clear-tenant-id'''
+              method.response.header.Access-Control-Allow-Methods: '''*'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      summary: Get a person by its HRN  # Here HRN is system generated identifier for the person and not user specified ID (may be unique)
+      description: "Returns a JSON object representing the person record specified by its HRN.  \n\nHere, the HRN is the system generated identifier for the person, and is not a user specified ID."
+      operationId: getPersonForHRN
+      parameters:
+        - in: path
+          name: hrn
+          required: true
+          schema:
+            type: string
+      responses: 
+        '200':
+          description: A person with limited details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonResponse"
+        '404':
+          description: "Person Not Found: The system will throw this error if the HRN provided does not correspond with a Person record in the data."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '400': 
+          description: "Bad Request: This error is returned for any problems with parameters and their values."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '401': 
+          description: "Unauthorized: This error indicates missing credentials or other issues with the system provided authentication mechanisams." 
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '403': 
+          description: "Forbidden: The system will return this error if the provided credentials do not have access to the requested data."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+        '500':
+          description: "Internal Server Error: There is an internal problem with the service that prevents the requested data from being returned."
+          content: 
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Errors"
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PersonsGetByHrnHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"                     
+      tags: 
+        - Person
+    put:
+      summary: Replace entire state of the specified person
+      description: "Updates the person record specified by the HRN to reflect all values included in the request body, which must be a complete record in the appropriate JSON format, including all fields that are normally optional for the POST operation. \n\nThis operation is idempotent (i.e., if it is submitted multiple times, it will have the same effect as it did the first time)."
+      operationId: replacePerson
+      parameters:
+        - in: path
+          name: hrn
+          required: true
+          schema:
+            type: string
+      requestBody: 
+        required: true
+        description: A JSON object all fields 
+        content:
+          application/json:
+           schema:
+             $ref: '#/components/schemas/Person'
+      responses:
+        '201':
+          description: Person replaced
+          content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    hrn:
+                      type: string
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PersonsPutHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "204"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"               
+      tags: 
+        - Person                
+    patch:
+      summary: Replace one more properties of specified person, idempotent.
+      description: "Updates the person record specified by the HRN to reflect any values included in the request body.  The JSON request body must include required fields, but any optional fields not included will remain unchanged by this operation. \n\n**NOTE**: If the dateModified value in the request body is earlier than what is currently in the Person record, the request will fail.\n\nThis operation is idempotent (i.e., if it is submitted multiple times, it will have the same effect as it did the first time)."
+      operationId: updatePerson
+      parameters:
+        - in: path
+          name: hrn
+          required: true
+          schema:
+            type: string
+      requestBody: 
+        required: true
+        description: A JSON object that contains required fields like name, id - must be unqiue
+        content:
+          application/json:
+           schema:
+            $ref: '#/components/schemas/Person'
+      responses:
+        '204':
+          description: Person updated
+      x-amazon-apigateway-integration:
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PersonsPatchHandler.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "204"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "AWS_PROXY"                     
+      tags: 
+        - Person
+components:
+  schemas:
+    SchemaExtension:
+      type: object
+      properties:
+        coreObjectName:
+          type: string 
+          readOnly: true
+        dateCreated:
+          type: string
+          format: date-time # RFC 3339, section 5.6 for example 2021-03-30T10:05:30Z
+        dateModified:
+          type: string
+          format: date-time # RFC 3339, section 5.6 for example 2021-03-30T10:05:30Z
+        schemas: 
+          type: array 
+          items: 
+            type: object
+            minProperties:  1
+            properties:
+              id: 
+                type: string
+                pattern: "^[a-zA-Z][a-zA-Z0-9_-]+"
+                maxLength: 25
+                description: value cannot be "customProperties" in addition to above pattern
+            additionalProperties: true
+            required:
+              - "coreObjectName"
+          description: An array of schema objects with one required property id defining the name of the 
+            collection must be satisfy "^[a-zA-Z][a-zA-Z0-9_-]+" and cannot be more than 25 characters. We don't have meta-schema. 
+    Errors:
+      type: object
+      properties:
+        errors: 
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+    Error:
+      type: object
+      properties:
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: integer
+        links: 
+            type: object
+            properties:
+              about: 
+                 type: string
+              help:
+                 type: string
+
+    OrganiztionsListResponse:
+      # Actual organizations are inclueded in 'data' array
+      # this allows us to add metadata like pagination, links
+      # or relationships etc.
+      # compatible with JSON:API Standard
+      type: object
+      properties:
+        pagination: 
+          $ref:  "#/components/schemas/Pagination"
+        filters:
+          type: object
+          properties: 
+            name:
+              type: string 
+            id: 
+              type: string
+            alias:
+              type: string
+        data:
+          type: array 
+          items: 
+            $ref:  "#/components/schemas/Organization"
+        links:
+          type: object
+          properties:
+            next:
+              type: string
+            prev:
+              type: string
+            nextWithContinuationToken:
+              type: string
+      
+    OrganizationResponse:
+      # Single organization is inclueded in 'data' object
+      # this allows us to add metadata like pagination, links
+      # or relationships etc.
+      # compatible with JSON:API Standard
+      type: object
+      properties:
+        data: 
+          $ref:  "#/components/schemas/Organization"
+    Pagination:  
+      description: Describes pagination support
+      type: object
+      properties:
+        offset:  # integer offset
+          description: Start index to return results
+          type: integer 
+          default: 1
+        pageSize:
+          description: Number of entries to include
+          type: integer
+          default: 25
+        total:
+          description: Total number of pages (Only populated in reponse)
+          type: integer 
+        continuationToken: 
+          description: Continuation token use instead of off set, this is technique expected to more reliable and stable for pagination.
+          type: string 
+        next:
+          description: Reserved for future use
+        prev:
+          description: Reserved for future use
+        nextWithContinuation:
+          description: Reserved for future use
+    HRN: # Huron Resource Name
+      type: string
+      readOnly: true
+      description: >
+        Huron Resource Name, unique system generated. With following structure. 
+        hrn:hrs:resource_type:resource_id
+    HRNREF:
+      type: object  
+      properties:
+        hrn:
+          $ref:  "#/components/schemas/HRN"
+        name: 
+          type: string
+    Organization:
+      type: object
+      required:
+        - "name"
+      properties:
+        hrn:
+          $ref: "#/components/schemas/HRN"
+          description: System generated unique value which is unique within what?  
+        name:
+          type: string
+          maxLength: 255
+          x-searchindex: true
+          x-filter: true
+        id:   
+          type: string 
+          maxLength: 255
+          description: >
+            User supplied value, must be unique within tenant.
+        sourceIdentifier:   
+          type: string 
+          description: >
+            Identifier of the organization in the source system.            
+        active:
+          type: boolean
+          default: true
+        dateCreated:
+          type: string
+          format: date-time # RFC 3339, section 5.6 for example 2021-03-30T10:05:30Z
+        dateModified:
+          type: string
+          format: date-time # RFC 3339, section 5.6 for example 2021-03-30T10:05:30Z
+        parent: 
+          $ref: "#/components/schemas/HRN"
+        category:
+          $ref: "#/components/schemas/HRNREF"
+        alias: 
+          type: array
+          items:
+            type: string 
+        functions:
+          type: array
+          items:
+            $ref:  "#/components/schemas/HRNREF"
+        notes:
+          type: string             
+        contactInformation:
+          $ref: "#/components/schemas/ContactInformation"
+        employees: 
+          items:
+            type: array
+            $ref: "#/components/schemas/Person"
+        customProperties: 
+          type: object
+          additionalProperties: true   
+        tags: 
+          type: array
+          items: 
+           type: "string"
+    ContactInformation:
+      type: object
+      properties:
+        addressLine1:
+          type: string
+          maxLength: 255
+        addressLine2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+        stateProvince: 
+          type: string
+        postalCode: 
+          type: string
+        country:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        website:
+          type: string 
+    PersonsListResponse:
+      # Actual persons are inclueded in 'data' array
+      # this allows us to add metadata like pagination, links
+      # or relationships etc.
+      # compatible with JSON:API Standard
+      type: object
+      properties:
+        pagination: 
+          $ref:  "#/components/schemas/Pagination"
+        filters:
+          type: object
+          properties: 
+            firstName:
+              type: string 
+            lastName: 
+              type: string
+            orgnization: # Name of Person's organization
+              type: string
+        data: 
+          type: array
+          items: 
+            $ref:  "#/components/schemas/Person"
+        links:
+          type: object
+          properties:
+            next:
+              type: string
+            prev:
+              type: string
+            nextWithContinuationToken:
+              type: string
+    PersonResponse:
+      # Single organization is inclueded in 'data' object
+      # this allows us to add metadata like pagination, links
+      # or relationships etc.
+      # compatible with JSON:API Standard
+      type: object
+      properties:
+        data: 
+          $ref:  "#/components/schemas/Person"
+    Person: 
+      type: object
+      required:
+        - "firstName"
+        - "lastName"
+      properties: 
+        hrn:
+          $ref:  "#/components/schemas/HRN"
+          description: This property is ignored by POST. The PUT or PATCH request used it for validation with path value
+        honorific:    
+          type: string
+          maxLength: 10
+        id:
+          type: string
+          description: 
+            Not the true key. Autogenerate if not set by HR feed. Unique constraint inside the tenant
+            HR feeds send string "ID1234567". Shall we keep reusing the ID pattern that we have now?  
+        active: 
+          type: boolean
+          default: true
+          description: 
+            Defines the visibility to users
+        firstName:
+          type: string
+          maxLength: 255
+        lastName: 
+          type: string
+          maxLength: 255
+        middleName:
+          type: string 
+          maxLength: 255
+        title:
+          type: string
+          maxLength: 255
+        userId:
+          type: string
+          maxLength: 255
+          description: 
+            This needs to be importable and set for the person but also linked to COGNITO
+        ORCID:
+          type: string
+          description: 
+            Universal ID for researchers 
+        sourceIdentifier:
+          type: string
+          description:
+            When we build interfaces to external systems they want to send an identifier. 
+            This is often the ID but would better be the other apps equivalent of the OID. 
+            When this is available we need a place to store it. Remote managed fields use this field.
+            In the data warehouse world this is called sourceIdentifier. Few will be able to edit this BUT 
+            in emergency cases it needs to be accessible to edit so that references can be fixed.
+            It MIGHT be the ID if they do not have better. If created from the form then NULL.
+          maxLength: 255
+        department:
+          $ref:  "#/components/schemas/HRNREF"
+        division:
+          $ref: "#/components/schemas/HRNREF"
+        contactInformation: 
+          $ref: "#/components/schemas/ContactInformation"
+        earnedDegrees:
+          type: string
+        employeeId: 
+          type: string
+        employer:
+          $ref: "#/components/schemas/HRNREF"
+          description: For P10 support
+        customProperties: 
+          type: object
+          additionalProperties: true
+        tags: 
+          type: array
+          items: 
+           type: "string"          
+        roles: 
+          type: array
+          items: 
+           type: "string"          
+        dateCreated:
+            type: string
+            format: date-time # RFC 3339, section 5.6 for example 2021-03-30T10:05:30Z
+        dateModified:
+            type: string
+            format: date-time # RFC 3339, section 5.6 for example 2021-03-30T10:05:30Z
+  parameters:  # understanding parameters
+    HRN:
+      name: hrn  # componsed of: tenant + prefix + guid?
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/HRN"
+    Pagination:
+      name: pagination
+      in: query
+      required: false
+      schema: 
+        type: object
+        properties:
+          offset: 
+            type: integer
+            default: 0
+          pageSize: 
+            type: integer
+            default: 25
+      explode: true # Generate separate parameters for each field.
+    Sort:
+      name: sort
+      description: |
+       Field name to sort on. 
+
+       **Note**: The default sort order is descending; to specify ascending sort order, prefix the field name with a dash (_e.g._ \"-dateModified\")
+      in: query
+      schema:
+        type: string
+        default: dateModified
+    Filter:
+      name: filter
+      description: For example filter[name]='Huron'
+      in: query 
+      schema:
+        type: array
+        items:
+          type: string 
+    IncludeFields:  # List of fields of the resource to include in the response
+      name: include
+      in: query 
+      schema: 
+        type: string
+  x-hrs-events:
+    DeactivateOrganization: # this is the event name?
+      schema:
+        $ref:  "#/components/schemas/Organization"
+    RefreshState: # Another example were event is broadcast when significant change is made to org or a person?
+      schema:
+        type: object
+        properties:
+          hrn: 
+            type: string
+
+  #securitySchemes:
+  #  bearerJwtAuth:
+  #    type: http
+  #    scheme: bearer
+  #    bearerFormat: JWT
+  #  APIGatewayAuthorizer:
+  #    type: apiKey
+  #    name: Authorization
+  #    in: header
+  #    x-amazon-apigateway-authtype: oauth2
+  #    x-amazon-apigateway-authorizer:
+  #      type: token
+  #      authorizerUri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:account-id:function:function-name/invocations
+  #      authorizerCredentials: arn:aws:iam::account-id:role
+  #      identityValidationExpression: "^x-[a-z]+"
+  #      authorizerResultTtlInSeconds: 60
+tags:
+- name: models
+  x-displayName: All Models
+  description: |
+    ## Organization
+    <SchemaDefinition schemaRef="#/components/schemas/Organization" />
+    
+    ## Person
+    <SchemaDefinition schemaRef="#/components/schemas/Person" />     
+x-tagGroups:
+- name: Core
+  tags:
+  - Organization
+  - Person
+  - Schema extension
+- name: Models
+  tags:  
+  - models
