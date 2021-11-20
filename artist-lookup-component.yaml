@@ -6,8 +6,6 @@ metadata:
   tags:
     - java
     - data
-  annotations:
-    backstage.io/techdocs-ref: url:https://github.com/rneild/backstagetest
   links:
     - url: https://example.com/user
       title: Examples Users
