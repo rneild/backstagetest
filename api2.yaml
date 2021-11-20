@@ -11,4 +11,4 @@ spec:
   lifecycle: production
   owner: team-a
   definition:
-    $text: https://dev.azure.com/hurontfs/hrs/_git/CS_ProfileService?path=/api/profileservice.yml
+    $text: https://github.com/rneild/backstagetest/blob/main/profileservice.yaml
