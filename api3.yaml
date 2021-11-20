@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: profileservice
+  description: CS Profile Service
+  tags:
+    - spotify
+    - rest
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-a
+  definition:
+    $text: https://github.com/rneild/backstagetest/blob/main/profileservice.yaml
